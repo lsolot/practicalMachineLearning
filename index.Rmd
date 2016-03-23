@@ -1,22 +1,95 @@
----
-title: "Practical Machine Learning Course Project"
-author: "Lou Solot"
-date: "March 22, 2016"
-output: html_document
----
+# Practical Machine Learning Course Assignment
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## Executive Summary
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Using data collected from various fitness tracking devices (Fitbit, Jawbone, etc) the goal of this project is to use this data, which has been provided as part of the assignment, to predict the manner in which the participants performed a particular exercise. Data from accelerometers on the belt, forearm and dumbbell of six participants will be used to predict this dependent value denoted as "classe"
 
-```{r}
-summary(cars)
+## Data Loading and Cleaning
+
+The data can be found at the following locations:
+<br/>
+
+* Training
+<br/>
+<a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.cs</a>
+<br/>
+
+* Test
+<br/>
+<a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a>
+<br/><br/>
+
+```{r echo=TRUE}
+## Load the data
+set.seed(1234)
+train <- read.csv("pml-training.csv", na.strings=c("","NA","NULL"), strip.white = T)
+test <- read.csv("pml-testing.csv", na.strings=c("","NA","NULL"), strip.white = T)
+dim(train);dim(test)
 ```
 
-You can also embed plots, for example:
+<br/>Get rid of rows with NAs
+<br/>
 
-```{r, echo=FALSE}
-plot(cars)
+```{r echo=TRUE}
+## Clean the data
+naRows <- train[, apply(train, 2, function(x) { !any(is.na(x))})]
+naRows2 <- test[, apply(test, 2, function(x) { !any(is.na(x))})]
+dim(naRows); dim(naRows2)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+<br/>Get rid of non-meaningul columns
+<br/>
+
+```{r echo=TRUE}
+train <- naRows[, -c(1:8)]
+test  <- naRows2[, -c(1:8)]
+dim(train);dim(test)
+```
+
+<br/>Now lets use the method taught in class to partition the training data into training and test sets
+<br/>
+
+```{r echo=TRUE}
+library(caret)
+library(randomForest)
+inTrain <- createDataPartition(train$classe, p = 0.7, list = F)
+training <- train[inTrain,]
+validating <- train[-inTrain,]
+dim(training); dim(validating)
+```
+
+## Random Forest
+
+```{r echo=TRUE, cache=TRUE}
+## Takes a looong time, so caching is on
+rf <- train(classe ~ . , data = training, model = "rf", importance = T)
+## Predict against the testing data
+pd <- predict(rf, newdata = validating)
+```
+
+## Cross Validation
+<br/>
+Check how well the rf model predicts against the vaidation data
+
+```{r echo=TRUE}
+sum(pd == validating$classe) / length(pd)
+```
+
+```{r echo=TRUE}
+confusionMatrix(validating$classe, pd)$table
+```
+
+99.28% accuracy and the confusion matrix looks good...
+<br/>
+<br/>
+Produce the values used to submit for assignment quiz
+
+```{r echo=TRUE}
+predict(rf, newdata=test)
+```
+
+Let's plot the variable importance (top 20)
+
+```{r echo=TRUE}
+varImpPlot(rf$finalModel, n.var = 20)
+```
