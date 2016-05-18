@@ -1,0 +1,62 @@
+---
+title       : MPG Predictor for mtcars Data 
+subtitle    : Using Weight, Horsepower and Transmission Type
+author      : Lou Solot
+job         : 
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : []            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+---
+
+## Method
+
+1. Use Linear Regression to find the variables that can predict MPG
+2. Build a prediction model using those variables
+3. Create a shiny app that enables users to input those variables in order to predict MPG
+4. Include the mtcars table so that users can compare their result to the real data
+```{r }
+sort(cor(mtcars)[1,])
+```
+
+This correlation shows that wt, hp, am, cyl and disp are all highly correlated with mpg
+
+--- .class #id 
+
+## Eliminate Variables Highly correlated with Each Other
+```{r }
+sort(cor(mtcars)[4,])
+```
+
+We can eliminate hp and disp since predictors should not be highly correlated with each other
+
+--- .class #id
+
+## Build the Model Using Weight, Horsepower and Transmission Type
+
+```{r }
+pred <- lm(mpg ~ am + wt + hp, data = mtcars)
+summary(pred)$coef
+```
+
+--- .class #id
+
+## Plots
+
+```{r }
+par(mfrow = c(2,2))
+plot(pred)
+```
+
+--- .class #id
+
+## Conclusion
+
+```{r }
+summary(pred)$r.squared
+```
+
+* This model explains ~84% of the variance
+* This shows that the combination of weight, horsepower and transmission type is a good predictor of mpg
